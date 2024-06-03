@@ -9,7 +9,7 @@ void create_tiles(const int W, const int H, const int TILE, Tile tiles[][W])
 			int x = j * TILE;
 			int y = i * TILE;
 
-			Tile tile = {x + 5, y + 5, TILE, TILE, BLACK, 0};
+			Tile tile = {x + 10, y + 5, TILE - 5, TILE - 5, BLACK, 0};
 			tiles[i][j] = tile;
 		}
 	}
@@ -25,8 +25,9 @@ void draw_tiles(const int W, const int H, Tile tiles[][W])
 				tiles[i][j].x, tiles[i][j].y,
 				tiles[i][j].w, tiles[i][j].h};
 
-			if (tiles[i][j].occupied != 0)
+			if (tiles[i][j].occupied != 0) {
 				DrawRectangleGradientEx(tile, RAYWHITE, tiles[i][j].color, tiles[i][j].color, tiles[i][j].color);
+			}
 
 		}
 	}

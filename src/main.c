@@ -9,8 +9,9 @@
 #define SCR_HEIGHT H * TILE
 
 const int W = 10, H = 20;
-const int TILE = 35;
+const int TILE = 25;
 
+int pause = 0;
 
 Piece pieces[7] = {
 	(const Piece) {
@@ -162,19 +163,24 @@ static void move_piece(Piece *piece, Piece *pieces, Tile tiles[][W])
 	}
 }
 
-static void move_lines_down(int index, int row, Color color, Tile tiles[][W]) 
+static void move_lines_down(int row, Tile tiles[][W])
 {
-	if (tiles[row-1][index].occupied == 0) {
-		return;	
-	} 
+	int count = 0;
 
-	tiles[row-1][index].color = BLACK;
-	tiles[row-1][index].occupied = 0;	
+	for (int i = 0; i < W; i++) 
+	{
+		if (tiles[row-1][i].occupied != 0) count++;
+		if (i == W - 1 && count == 0) return;
 
-	tiles[row][index].color = color;
-	tiles[row][index].occupied = counter++;
+		Tile temp = tiles[row][i];
+		tiles[row][i].occupied = tiles[row-1][i].occupied;
+		tiles[row][i].color = tiles[row-1][i].color;
 
-	move_lines_down(index, row-1, color, tiles);
+		tiles[row-1][i].occupied = temp.occupied;
+		tiles[row-1][i].color = temp.color;
+	}
+
+	move_lines_down(row-1, tiles);
 }
 
 static void clear_lines(int row, Tile tiles[][W])
@@ -182,20 +188,18 @@ static void clear_lines(int row, Tile tiles[][W])
 	for (int i = 0; i < W; i++)
 	{
 		tiles[row][i].occupied = 0;
-		Color temp = tiles[row][i].color;
 		tiles[row][i].color = BLACK;
-
-		move_lines_down(i, row, temp, tiles);	
 	}
 }
 
-static int game_over(Piece *piece, Tile tiles[][W]) 
+static int game_over(Piece *piece, Tile tiles[][W])
 {
 	for (int i = 0; i < 4; i++)
 	{
 		int y_pos = piece->pos.y + piece->coords[piece->rot_state][i][0];
 
-		if (y_pos <= 0 && is_touching_piece('Y', piece, tiles)) return 1;
+		if (y_pos <= 0 && is_touching_piece('Y', piece, tiles))
+			return 1;
 	}
 
 	return 0;
@@ -209,28 +213,30 @@ static void search_for_clear_lines(Piece *piece, Tile tiles[][W])
 	{
 		for (int j = 0; j < W; j++)
 		{
-			if (tiles[i][j].occupied != 0) col_count++;
-			if (j == W - 1 && col_count != W) col_count = 0;
+			if (tiles[i][j].occupied != 0)
+				col_count++;
+			if (j == W - 1 && col_count != W)
+				col_count = 0;
 
 			if (col_count == W && is_touching_piece('Y', piece, tiles))
 			{
 				clear_lines(i, tiles);
+				move_lines_down(i, tiles);
 				col_count = 0;
 			}
 		}
 	}
-
 }
 
 static void clear_screen(Tile tiles[][W])
 {
-	counter = 0;	
+	counter = 0;
 
 	for (int i = 0; i < H; i++)
 	{
 		for (int j = 0; j < W; j++)
 		{
-			tiles[i][j].color = BLACK;	
+			tiles[i][j].color = BLACK;
 			tiles[i][j].occupied = 0;
 		}
 	}
@@ -250,23 +256,29 @@ int main()
 	while (!WindowShouldClose())
 	{
 		BeginDrawing();
-			ClearBackground(BLACK);
-			draw_tiles(W, H, tiles);
-			DrawRectangleLinesEx(border, 1, WHITE);
+		ClearBackground(BLACK);
+		draw_tiles(W, H, tiles);
+		DrawRectangleLinesEx(border, 2.5, LIGHTGRAY);
 
-			search_for_clear_lines(&piece, tiles);
+		search_for_clear_lines(&piece, tiles);
 
-			if (!game_over(&piece, tiles)) 
-			{
-				move_piece(&piece, pieces, tiles);
-			} 
-			
-			if (IsKeyPressed(KEY_R)) 
-			{
-				counter = 0;
-				clear_screen(tiles);
-				piece = spawn_piece(pieces, tiles);
-			}
+		if (!game_over(&piece, tiles) && !pause)
+		{
+			move_piece(&piece, pieces, tiles);
+		}
+
+		if (IsKeyPressed(KEY_R))
+		{
+			counter = 0;
+			clear_screen(tiles);
+			piece = spawn_piece(pieces, tiles);
+		}
+
+		if (IsWindowFocused()) {
+			pause = 0;
+		} else {
+			pause = 1;
+		}
 
 		EndDrawing();
 	}
